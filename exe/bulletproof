@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bulletproof"
+require "optparse"
+
+options = {}
+
+parser = OptionParser.new do |o|
+  o.banner = <<~BANNER
+    Usage: bulletproof [options] PATH
+
+    Static analysis for over-eager ActiveRecord includes.
+
+    Examples:
+      bulletproof app/
+      bulletproof app/models/user.rb
+      bulletproof app/ --max-includes-depth 3 --max-associations 5
+  BANNER
+
+  o.on("--max-includes-depth N", Integer, "Max nesting depth of includes (default: 2)") do |n|
+    options[:max_includes_depth] = n
+  end
+
+  o.on("--max-associations N", Integer, "Max number of associations in one includes (default: 3)") do |n|
+    options[:max_associations] = n
+  end
+
+  o.on("-v", "--version", "Print version") do
+    puts Bulletproof::VERSION
+    exit
+  end
+
+  o.on("-h", "--help", "Print this help") do
+    puts o
+    exit
+  end
+end
+
+parser.parse!
+
+path = ARGV.first
+
+if path.nil?
+  warn parser.banner
+  exit 1
+end
+
+unless File.exist?(path)
+  warn "bulletproof: #{path}: No such file or directory"
+  exit 1
+end
+
+Bulletproof.configure do |c|
+  c.max_includes_depth = options[:max_includes_depth] if options[:max_includes_depth]
+  c.max_associations   = options[:max_associations]   if options[:max_associations]
+end
+
+report = Bulletproof.analyze(path)
+
+if report.ok?
+  puts "No violations found."
+  exit 0
+else
+  puts report
+  puts
+  puts "#{report.violations.size} violation(s) found."
+  exit 1
+end
