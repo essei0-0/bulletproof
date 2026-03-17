@@ -106,7 +106,8 @@ module Bulletproof
     end
 
     def inject_into_body(body, content)
-      chunks = body.map { |chunk| chunk }
+      chunks = []
+      body.each { |chunk| chunks << chunk } # rubocop:disable Style/MapIntoArray
       injected = false
       chunks.map do |chunk|
         if !injected && chunk.include?("</body>")
