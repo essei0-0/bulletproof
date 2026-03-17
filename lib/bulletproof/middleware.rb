@@ -106,8 +106,9 @@ module Bulletproof
     end
 
     def inject_into_body(body, content)
+      chunks = body.map { |chunk| chunk }
       injected = false
-      body.map do |chunk|
+      chunks.map do |chunk|
         if !injected && chunk.include?("</body>")
           injected = true
           chunk.sub("</body>", "#{content}\n</body>")
