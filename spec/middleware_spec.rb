@@ -172,6 +172,24 @@ RSpec.describe Bulletproof::Middleware do
           expect(received).to eq([warning])
         end
       end
+
+      context "ボディが each のみ持つオブジェクト（RackBody）のとき" do
+        let(:rack_body) do
+          chunks = ["<html><body>Hello</body></html>"]
+          obj = Object.new
+          obj.define_singleton_method(:each) { |&blk| chunks.each(&blk) }
+          obj
+        end
+        let(:middleware) do
+          app = ->(_env) { [200, { "content-type" => "text/html" }, rack_body] }
+          described_class.new(app, config)
+        end
+
+        it "map を呼ばずに注入できる" do
+          _, _, body = middleware.call({})
+          expect(body.join).to include("console.warn")
+        end
+      end
     end
   end
 end
